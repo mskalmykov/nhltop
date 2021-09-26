@@ -1,2 +1,1 @@
-# nhltop
 DevOps school diploma
