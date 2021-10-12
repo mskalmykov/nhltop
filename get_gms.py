@@ -23,6 +23,31 @@ def get_game_brief(game_id):
 
     return result
 
+
+def get_game_players(game_id):
+    result = []
+    baseurl = 'https://statsapi.web.nhl.com/api/v1/game/'
+    reply = requests.get(baseurl + str(game_id) + '/boxscore').json()
+    
+    team_away = reply['teams']['away']['team']
+    team_home = reply['teams']['home']['team']
+    players_away = reply['teams']['away']['players']
+    players_home = reply['teams']['home']['players']
+
+    for key in players_away.keys():
+        player = players_away[key]
+        if player['stats']: 
+            player['team'] = team_away
+            result.append(player)
+
+    for key in players_home.keys():
+        player = players_home[key]
+        if player['stats']: 
+            player['team'] = team_home
+            result.append(player)
+
+    return result
+
 # Entry point
 season = sys.argv[1]
 all_stars_ids = get_season_games(season, 'A')
@@ -37,18 +62,16 @@ print('All stars games:')
 for game in all_stars_ids:
     info = get_game_brief(game)
     print('{}: {:30} - {:30}   {}:{}'.format(game, *info))
+    players = get_game_players(game)
+    for p in players:
+        print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
 print('Final games:')
 for game in final_ids:
     info = get_game_brief(game)
     print('{}: {:30} - {:30}   {}:{}'.format(game, *info))
+    players = get_game_players(game)
+    for p in players:
+        print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
 
-#for date in games['dates']:
-#  for game in date['games']:
-#    gamePk = game['gamePk']
-#    team_away_name = game['teams']['away']['team']['name']
-#    team_away_score = game['teams']['away']['score']
-#    team_home_name = game['teams']['home']['team']['name']
-#    team_home_score = game['teams']['home']['score']
-#    print('{}: {} - {} {}:{}'.format(gamePk, team_away_name, team_home_name, team_away_score, team_home_score))
