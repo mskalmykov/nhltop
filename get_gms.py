@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import requests
 import sys
+import os
+import mariadb
+
 
 def get_season_games(season, type):
     result = []
@@ -44,7 +47,53 @@ def get_game_players(game_id):
 
     return result
 
+def db_connect():
+    username = os.environ.get('db_user')
+    password = os.environ.get('db_password')
+    host = os.environ.get('db_server')
+
+    return mariadb.connect(
+        username = username,
+        password = password,
+        host = host,
+        database = 'nhltop'
+    )
+
+def db_store_game(conn, game, date):
+    cur = conn.cursor()
+    gamePk = game['gamePk']
+    season = game['season']
+    gameType = game['gameType']
+    team_away_id = game['teams']['away']['team']['id']
+    team_away_name = game['teams']['away']['team']['name']
+    team_away_score = game['teams']['away']['score']
+    team_home_id = game['teams']['home']['team']['id']
+    team_home_name = game['teams']['home']['team']['name']
+    team_home_score = game['teams']['home']['score']
+    cur.execute("""
+        INSERT INTO games (
+            gamePk,
+            season,
+            gameType,
+            date,
+            team_away_id,
+            team_away_name,
+            team_away_score,
+            team_home_id,
+            team_home_name,
+            team_home_score
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """,
+    (gamePk, season, gameType, date, team_away_id, team_away_name, team_away_score,
+     team_home_id, team_home_name, team_home_score)
+    )
+
+
+
 # Entry point
+db_conn = db_connect()
+
 season = sys.argv[1]
 all_stars_games = get_season_games(season, 'A')
 playoff_games = get_season_games(season, 'P')
