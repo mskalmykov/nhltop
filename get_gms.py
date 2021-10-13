@@ -11,7 +11,9 @@ def get_season_games(season, type):
     reply = requests.get(baseurl + 'season=' + season + '&gameType=' + type).json()
     for date in reply['dates']:
       for game in date['games']:
+        game['gameDate'] = date['date']  # replace gameDate with correct date (start of the game)
         result.append(game)
+
     return result
 
 def print_game_brief(game):
@@ -59,11 +61,12 @@ def db_connect():
         database = 'nhltop'
     )
 
-def db_store_game(conn, game, date):
+def db_store_game(conn, game):
     cur = conn.cursor()
     gamePk = game['gamePk']
     season = game['season']
     gameType = game['gameType']
+    gameDate = game['gameDate']
     team_away_id = game['teams']['away']['team']['id']
     team_away_name = game['teams']['away']['team']['name']
     team_away_score = game['teams']['away']['score']
@@ -75,7 +78,7 @@ def db_store_game(conn, game, date):
             gamePk,
             season,
             gameType,
-            date,
+            gameDate,
             team_away_id,
             team_away_name,
             team_away_score,
@@ -85,7 +88,7 @@ def db_store_game(conn, game, date):
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """,
-    (gamePk, season, gameType, date, team_away_id, team_away_name, team_away_score,
+    (gamePk, season, gameType, gameDate, team_away_id, team_away_name, team_away_score,
      team_home_id, team_home_name, team_home_score)
     )
 
@@ -106,6 +109,7 @@ for game in playoff_games:
 print('All stars games:')
 for game in all_stars_games:
     print_game_brief(game)
+    db_store_game(db_conn, game)
 
     players = get_game_players(game['gamePk'])
     for p in players:
@@ -114,9 +118,12 @@ for game in all_stars_games:
 print('Final games:')
 for game in final_games:
     print_game_brief(game)
+    db_store_game(db_conn, game)
 
     players = get_game_players(game['gamePk'])
     for p in players:
         print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
+db_conn.commit()
+db_conn.close()
 
