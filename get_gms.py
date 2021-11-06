@@ -63,35 +63,153 @@ def db_connect():
 
 def db_store_game(conn, game):
     cur = conn.cursor()
-    gamePk = game['gamePk']
-    season = game['season']
-    gameType = game['gameType']
-    gameDate = game['gameDate']
-    team_away_id = game['teams']['away']['team']['id']
-    team_away_name = game['teams']['away']['team']['name']
-    team_away_score = game['teams']['away']['score']
-    team_home_id = game['teams']['home']['team']['id']
-    team_home_name = game['teams']['home']['team']['name']
-    team_home_score = game['teams']['home']['score']
     cur.execute("""
-        INSERT INTO games (
-            gamePk,
-            season,
-            gameType,
-            gameDate,
-            team_away_id,
-            team_away_name,
-            team_away_score,
-            team_home_id,
-            team_home_name,
-            team_home_score
+        REPLACE INTO games (
+           gamePk,
+           season,
+           gameType,
+           gameDate,
+           team_away_id,
+           team_away_name,
+           team_away_score,
+           team_home_id,
+           team_home_name,
+           team_home_score
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
-    (gamePk, season, gameType, gameDate, team_away_id, team_away_name, team_away_score,
-     team_home_id, team_home_name, team_home_score)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+           game['gamePk'],
+           game['season'],
+           game['gameType'],
+           game['gameDate'],
+           game['teams']['away']['team']['id'],
+           game['teams']['away']['team']['name'],
+           game['teams']['away']['score'],
+           game['teams']['home']['team']['id'],
+           game['teams']['home']['team']['name'],
+           game['teams']['home']['score']
+        )
     )
 
+def db_store_player_stat(conn, game, player):
+    cur = conn.cursor()
+
+    # Save personal info
+    cur.execute("""
+        REPLACE INTO players (
+           gamePk,
+           personId,
+           fullName,
+           birthDate,
+           birthCity,
+           birthCountry,
+           nationality,
+           jerseyNumber,
+           positionName
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+           game['gamePk'],
+           player['person']['id'],
+           player['person']['fullName'],
+           player['person']['birthDate'],
+           player['person']['birthCity'],
+           player['person']['birthCountry'],
+           player['person']['nationality'],
+           player['jerseyNumber'],
+           player['position']['name']
+        )
+    )
+    # Save goalie stats
+    if player['position']['name'] == 'Goalie':
+        cur.execute("""
+            REPLACE INTO goalieStats (
+               gamePk,
+               personId,
+               timeOnIce,
+               assists,
+               goals,
+               pim,
+               shots,
+               saves,
+               powerPlaySaves,
+               shortHandedSaves,
+               evenSaves,
+               shortHandedShotsAgainst,
+               evenShotsAgainst,
+               powerPlayShotsAgainst,
+               savePercentage
+            )
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+               game['gamePk'],
+               player['person']['id'],
+               player['stats']['goalieStats']['timeOnIce'],
+               player['stats']['goalieStats']['assists'],
+               player['stats']['goalieStats']['goals'],
+               player['stats']['goalieStats']['pim'],
+               player['stats']['goalieStats']['shots'],
+               player['stats']['goalieStats']['saves'],
+               player['stats']['goalieStats']['powerPlaySaves'],
+               player['stats']['goalieStats']['shortHandedSaves'],
+               player['stats']['goalieStats']['evenSaves'],
+               player['stats']['goalieStats']['shortHandedShotsAgainst'],
+               player['stats']['goalieStats']['evenShotsAgainst'],
+               player['stats']['goalieStats']['powerPlayShotsAgainst'],
+               player['stats']['goalieStats']['savePercentage']
+            )
+        )
+    # Save skater stats
+    else:
+        cur.execute("""
+            REPLACE INTO skaterStats (
+               gamePk,
+               personId,
+               timeOnIce,
+               assists,
+               goals,
+               shots,
+               hits,
+               powerPlayGoals,
+               powerPlayAssists,
+               penaltyMinutes,
+               faceOffWins,
+               faceoffTaken,
+               takeaways,
+               giveaways,
+               shortHandedGoals,
+               shortHandedAssists,
+               blocked,
+               plusMinus,
+               evenTimeOnIce,
+               powerPlayTimeOnIce,
+               shortHandedTimeOnIce
+            )
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+               game['gamePk'],
+               player['person']['id'],
+               player['stats']['skaterStats']['timeOnIce'],
+               player['stats']['skaterStats']['assists'],
+               player['stats']['skaterStats']['goals'],
+               player['stats']['skaterStats']['shots'],
+               player['stats']['skaterStats']['hits'],
+               player['stats']['skaterStats']['powerPlayGoals'],
+               player['stats']['skaterStats']['powerPlayAssists'],
+               player['stats']['skaterStats']['penaltyMinutes'],
+               player['stats']['skaterStats']['faceOffWins'],
+               player['stats']['skaterStats']['faceoffTaken'],
+               player['stats']['skaterStats']['takeaways'],
+               player['stats']['skaterStats']['giveaways'],
+               player['stats']['skaterStats']['shortHandedGoals'],
+               player['stats']['skaterStats']['shortHandedAssists'],
+               player['stats']['skaterStats']['blocked'],
+               player['stats']['skaterStats']['plusMinus'],
+               player['stats']['skaterStats']['evenTimeOnIce'],
+               player['stats']['skaterStats']['powerPlayTimeOnIce'],
+               player['stats']['skaterStats']['shortHandedTimeOnIce']
+            )
+        )
 
 
 # Entry point
@@ -113,6 +231,7 @@ for game in all_stars_games:
 
     players = get_game_players(game['gamePk'])
     for p in players:
+        db_store_player_stat(db_conn, game, p)
         print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
 print('Final games:')
@@ -122,6 +241,7 @@ for game in final_games:
 
     players = get_game_players(game['gamePk'])
     for p in players:
+        db_store_player_stat(db_conn, game, p)
         print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
 db_conn.commit()
