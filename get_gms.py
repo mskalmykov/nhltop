@@ -211,6 +211,40 @@ def db_store_player_stat(conn, game, player):
             )
         )
 
+# Retrieve players, who played both All-stars and Final games of the season
+def get_top_players(conn, season):
+    cur = conn.cursor()
+    result = []
+
+    cur.execute("""
+        WITH q1 AS
+         (SELECT p.personId,
+                 p.fullName,
+                 p.gamePk,
+                 g.gameType,
+                 g.season 
+          FROM players p INNER JOIN games g ON p.gamePk = g.gamePk WHERE g.gameType = 'P'),
+        q2 AS
+         (SELECT p.personId,
+                 p.fullName, 
+                 p.gamePk, 
+                 g.gameType,
+                 g.season 
+         FROM players p INNER JOIN games g ON p.gamePk = g.gamePk WHERE g.gameType = 'A')
+        SELECT DISTINCT
+          q1.personId,
+          q1.fullName,
+          q1.season
+        FROM q1 INNER JOIN q2 ON q1.personId = q2.personId AND q1.season = q2.season
+        WHERE q1.season = ?
+        """,
+        (season,)
+    )
+
+    for (personId, fullName, season) in cur:
+        result.append(personId)
+
+    return result
 
 # Entry point
 db_conn = db_connect()
@@ -245,5 +279,12 @@ for game in final_games:
         print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
 db_conn.commit()
+
+top_players = get_top_players(db_conn, season)
+
+print('Players, who took part both in All-stars and Final games:')
+for player in top_players:
+    print(player)
+
 db_conn.close()
 
