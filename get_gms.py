@@ -235,26 +235,23 @@ def db_store_player_stat(conn, game, player):
 # Retrieve players, who played both All-stars and Final games of the season
 def get_top_players(conn, season):
     cur = conn.cursor()
-    result = []
+    result = {'players': []}
 
     cur.execute("""
         WITH q1 AS
          (SELECT p.personId,
-                 p.fullName,
                  p.gamePk,
                  g.gameType,
                  g.season 
           FROM players p INNER JOIN games g ON p.gamePk = g.gamePk WHERE g.gameType = 'P'),
         q2 AS
          (SELECT p.personId,
-                 p.fullName, 
                  p.gamePk, 
                  g.gameType,
                  g.season 
          FROM players p INNER JOIN games g ON p.gamePk = g.gamePk WHERE g.gameType = 'A')
         SELECT DISTINCT
           q1.personId,
-          q1.fullName,
           q1.season
         FROM q1 INNER JOIN q2 ON q1.personId = q2.personId AND q1.season = q2.season
         WHERE q1.season = ?
@@ -262,8 +259,20 @@ def get_top_players(conn, season):
         (season,)
     )
 
-    for (personId, fullName, season) in cur:
-        result.append(personId)
+    players = []
+    for (personId, season) in cur:
+        players.append(personId)
+
+    for player in players:
+        cur.execute("""
+            SELECT p.personId, p.gamePk, g.gameType, g.season 
+            FROM players p INNER JOIN games g ON p.gamePk = g.gamePk
+            WHERE g.gameType = 'P' AND p.personId = ? AND g.season = ?
+            ORDER BY g.gamePk DESC LIMIT 1""",
+            (player, season)
+        )
+        for (personId, gamePk, gameType, season) in cur:
+            result['players'].append({'personId': personId, 'gamePk': gamePk})
 
     return result
 
@@ -289,11 +298,8 @@ for game in all_stars_games + final_games:
     for p in players:
         db_store_player_stat(db_conn, game, p)
 
-top_players = []
-for season in seasons:
-    top_players += get_top_players(db_conn, season)
-
 print('Players, who took part both in All-stars and Final games:')
-for player in top_players:
-    print(player)
+for season in seasons:
+    print(f'Season: {season}')
+    print(get_top_players(db_conn, season))
 
