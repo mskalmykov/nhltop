@@ -5,6 +5,27 @@ import os
 import mariadb
 
 
+def get_last_seasons(count):
+    result = []
+
+    # Get no more than 15 seasons, and no less than 1
+    if count < 1: count = 1
+    if count > 15: count = 15
+
+    baseurl = 'https://statsapi.web.nhl.com/api/v1/seasons/'
+    reply = requests.get(baseurl + 'current').json()
+    current_season = reply['seasons'][0]['seasonId']
+
+    reply = requests.get(baseurl).json()
+    if reply['seasons'][-1]['seasonId'] == current_season:
+        last = -2
+    else:
+        last = -1
+    for idx in range(last-count+1, last+1):
+        result.append(reply['seasons'][idx]['seasonId'])
+
+    return result
+
 def get_season_games(season, type):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/schedule?'
@@ -249,42 +270,30 @@ def get_top_players(conn, season):
 # Entry point
 db_conn = db_connect()
 
-season = sys.argv[1]
-all_stars_games = get_season_games(season, 'A')
-playoff_games = get_season_games(season, 'P')
+#season = sys.argv[1]
+
+seasons = get_last_seasons(3)
+for season in seasons:
+    all_stars_games = get_season_games(season, 'A')
+    playoff_games = get_season_games(season, 'P')
 
 final_games = []
 for game in playoff_games:
     if str(game['gamePk'])[7] == '4':
         final_games.append(game)
 
-print('All stars games:')
-for game in all_stars_games:
-    print_game_brief(game)
+for game in all_stars_games + final_games:
     db_store_game(db_conn, game)
 
     players = get_game_players(game['gamePk'])
     for p in players:
         db_store_player_stat(db_conn, game, p)
-        print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
 
-print('Final games:')
-for game in final_games:
-    print_game_brief(game)
-    db_store_game(db_conn, game)
-
-    players = get_game_players(game['gamePk'])
-    for p in players:
-        db_store_player_stat(db_conn, game, p)
-        print('{:30} {:30}'.format(p['person']['fullName'],p['team']['name']))
-
-db_conn.commit()
-
-top_players = get_top_players(db_conn, season)
+top_players = []
+for season in seasons:
+    top_players += get_top_players(db_conn, season)
 
 print('Players, who took part both in All-stars and Final games:')
 for player in top_players:
     print(player)
-
-db_conn.close()
 
