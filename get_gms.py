@@ -13,10 +13,13 @@ def get_last_seasons(count):
     if count > 15: count = 15
 
     baseurl = 'https://statsapi.web.nhl.com/api/v1/seasons/'
+
     reply = requests.get(baseurl + 'current').json()
+
     current_season = reply['seasons'][0]['seasonId']
 
     reply = requests.get(baseurl).json()
+
     if reply['seasons'][-1]['seasonId'] == current_season:
         last = -2
     else:
@@ -29,7 +32,9 @@ def get_last_seasons(count):
 def get_season_games(season, type):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/schedule?'
+
     reply = requests.get(baseurl + 'season=' + season + '&gameType=' + type).json()
+
     for date in reply['dates']:
       for game in date['games']:
         game['gameDate'] = date['date']  # replace gameDate with correct date (start of the game)
@@ -49,6 +54,7 @@ def print_game_brief(game):
 def get_game_players(game_id):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/game/'
+
     reply = requests.get(baseurl + str(game_id) + '/boxscore').json()
     
     team_away = reply['teams']['away']['team']
@@ -111,6 +117,8 @@ def db_store_game(conn, game):
            game['teams']['home']['score']
         )
     )
+
+    conn.commit()
 
 def db_store_player_stat(conn, game, player):
     cur = conn.cursor()
@@ -232,8 +240,21 @@ def db_store_player_stat(conn, game, player):
             )
         )
 
+    conn.commit()
+
+def db_get_seasons(conn):
+    cur = conn.cursor()
+    result = {'seasons': []}
+
+    cur.execute('select distinct season from games') 
+
+    for (season,) in cur:
+        result['seasons'].append(season)
+
+    return result
+
 # Retrieve players, who played both All-stars and Final games of the season
-def get_top_players(conn, season):
+def db_get_top_players(conn, season):
     cur = conn.cursor()
     result = {'players': []}
 
@@ -276,30 +297,86 @@ def get_top_players(conn, season):
 
     return result
 
+def db_get_game(conn, gamePk):
+    cur = conn.cursor()
+    result = {}
+
+    cur.execute("SELECT * FROM games WHERE gamePk = ?", (gamePk,))
+    for (gamePk, season, gameType, gameDate, 
+         team_away_id, team_away_name, team_away_score,
+         team_home_id, team_home_name, team_home_score) in cur:
+
+        result['gameDate'] = gameDate
+        result['team_away_name'] = team_away_name
+        result['team_away_score'] = team_away_score
+        result['team_home_name'] = team_home_name
+        result['team_home_score'] = team_home_score
+
+    return result
+
+def db_get_player_stat(conn, personId, gamePk):
+    cur = conn.cursor()
+    result = {}
+
+    cur.execute("""
+            SELECT fullName, birthDate, birthCity, birthCountry,
+                   nationality, jerseyNumber, positionName
+            FROM players
+            WHERE personId = ? AND gamePk = ?""",
+            (personId, gamePk)
+    )
+
+    for (fullName, birthDate, birthCity, birthCountry,
+         nationality, jerseyNumber, positionName) in cur:
+
+        result['fullName'] = fullName
+        result['birthDate'] = birthDate
+        result['birthCity'] = birthCity
+        result['birthCountry'] = birthCountry
+        result['nationality'] = nationality
+        result['jerseyNumber'] = jerseyNumber
+        result['positionName'] = positionName
+
+    return result
+
 # Entry point
 db_conn = db_connect()
 
 #season = sys.argv[1]
+try:
+    arg = sys.argv[1]
+except IndexError:
+    arg = 'display'
 
-seasons = get_last_seasons(3)
-for season in seasons:
-    all_stars_games = get_season_games(season, 'A')
-    playoff_games = get_season_games(season, 'P')
 
-final_games = []
-for game in playoff_games:
-    if str(game['gamePk'])[7] == '4':
-        final_games.append(game)
+if arg == 'update':
+    seasons = get_last_seasons(3)
 
-for game in all_stars_games + final_games:
-    db_store_game(db_conn, game)
+    for season in seasons:
+        all_stars_games = get_season_games(season, 'A')
+        playoff_games = get_season_games(season, 'P')
 
-    players = get_game_players(game['gamePk'])
-    for p in players:
-        db_store_player_stat(db_conn, game, p)
+        final_games = []
+        for game in playoff_games:
+            if str(game['gamePk'])[7] == '4':
+                final_games.append(game)
 
-print('Players, who took part both in All-stars and Final games:')
-for season in seasons:
-    print(f'Season: {season}')
-    print(get_top_players(db_conn, season))
+        for game in all_stars_games + final_games:
+            players = get_game_players(game['gamePk'])
+            db_store_game(db_conn, game)
+            for p in players:
+                db_store_player_stat(db_conn, game, p)
+
+else:
+    seasons = db_get_seasons(db_conn)
+
+    print('Players, who took part both in All-stars and Final games:')
+
+    for season in seasons['seasons']:
+        print(f'Season: {season}')
+
+        top_players = db_get_top_players(db_conn, season)
+        for player in top_players['players']:
+            print(db_get_player_stat(db_conn, player['personId'], player['gamePk']))
+            print(db_get_game(db_conn, player['gamePk']), '\n')
 
