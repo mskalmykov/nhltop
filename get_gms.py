@@ -134,9 +134,11 @@ def db_store_player_stat(conn, game, player):
            birthCountry,
            nationality,
            jerseyNumber,
-           positionName
+           positionName,
+           teamName,
+           teamId
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
            game['gamePk'],
            player['person']['id'],
@@ -146,7 +148,9 @@ def db_store_player_stat(conn, game, player):
            player['person']['birthCountry'],
            player['person']['nationality'],
            player['jerseyNumber'],
-           player['position']['name']
+           player['position']['name'],
+           player['team']['name'],
+           player['team']['id']
         )
     )
     # Save goalie stats
@@ -246,7 +250,7 @@ def db_get_seasons(conn):
     cur = conn.cursor()
     result = {'seasons': []}
 
-    cur.execute('select distinct season from games') 
+    cur.execute('SELECT DISTINCT season FROM games') 
 
     for (season,) in cur:
         result['seasons'].append(season)
@@ -320,14 +324,14 @@ def db_get_player_stat(conn, personId, gamePk):
 
     cur.execute("""
             SELECT fullName, birthDate, birthCity, birthCountry,
-                   nationality, jerseyNumber, positionName
+                   nationality, jerseyNumber, positionName, teamName
             FROM players
             WHERE personId = ? AND gamePk = ?""",
             (personId, gamePk)
     )
 
     for (fullName, birthDate, birthCity, birthCountry,
-         nationality, jerseyNumber, positionName) in cur:
+         nationality, jerseyNumber, positionName, teamName) in cur:
 
         result['fullName'] = fullName
         result['birthDate'] = birthDate
@@ -336,6 +340,14 @@ def db_get_player_stat(conn, personId, gamePk):
         result['nationality'] = nationality
         result['jerseyNumber'] = jerseyNumber
         result['positionName'] = positionName
+        result['teamName'] = teamName
+
+    if positionName == 'Goalie':
+        # Get goalie stat
+        print('Goalie')
+    else:
+        # Get skater stat
+        print('Skater')
 
     return result
 

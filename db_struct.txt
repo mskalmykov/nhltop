@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS players (
   nationality NVARCHAR(10),
   jerseyNumber TINYINT UNSIGNED,
   positionName NVARCHAR(30),
+  teamName NVARCHAR(50),
+  teamId SMALLINT UNSIGNED,
   PRIMARY KEY(gamePk, personId),
   CONSTRAINT `fk_gamePk`
      FOREIGN KEY (gamePk) REFERENCES games (gamePk)
