@@ -77,16 +77,142 @@ def get_game_players(game_id):
     return result
 
 def db_connect():
-    username = os.environ.get('db_user')
+    username = os.environ.get('db_username')
     password = os.environ.get('db_password')
-    host = os.environ.get('db_server')
+    host = os.environ.get('db_host')
+    database = os.environ.get('db_name')
 
     return mariadb.connect(
         username = username,
         password = password,
         host = host,
-        database = 'nhltop'
+        database = database
     )
+
+def db_update_schema(conn):
+    required_version = 1
+    try:
+        cur = conn.cursor()
+        cur.execute('SELECT version from schema_ver')
+        for (version,) in cur:
+            if version != required_version:
+                version = 0
+    except mariadb.Error as err:
+        if err.errno == 1146:
+            # Table not found - database is probably ampty
+            version = 0
+        else:
+            raise err
+
+    if version == 0:
+        # DB init
+        cur.execute("""
+            DROP TABLE IF EXISTS
+              schema_ver,
+              goalieStats,
+              skaterStats,
+              players,
+              games
+            """)
+        conn.commit()
+
+        cur.execute("""
+            CREATE TABLE games (
+              gamePk INT UNSIGNED NOT NULL PRIMARY KEY, 
+              season INT UNSIGNED,
+              gameType CHAR,
+              gameDate DATE,
+              team_away_id SMALLINT UNSIGNED,
+              team_away_name NVARCHAR(255),
+              team_away_score TINYINT UNSIGNED,
+              team_home_id SMALLINT UNSIGNED,
+              team_home_name NVARCHAR(255),
+              team_home_score TINYINT UNSIGNED
+            )""")
+
+        cur.execute("""
+            CREATE TABLE players (
+              gamePk INT UNSIGNED NOT NULL, 
+              personId INT UNSIGNED NOT NULL,
+              fullName NVARCHAR(255),
+              birthDate DATE,
+              birthCity NVARCHAR(50),
+              birthCountry NVARCHAR(10),
+              nationality NVARCHAR(10),
+              jerseyNumber TINYINT UNSIGNED,
+              positionName NVARCHAR(30),
+              teamName NVARCHAR(50),
+              teamId SMALLINT UNSIGNED,
+              PRIMARY KEY(gamePk, personId),
+              CONSTRAINT `fk_gamePk`
+                 FOREIGN KEY (gamePk) REFERENCES games (gamePk)
+                 ON DELETE CASCADE
+                 ON UPDATE CASCADE
+            )""")
+
+
+        cur.execute("""
+            CREATE TABLE goalieStats (
+              gamePk INT UNSIGNED NOT NULL,
+              personId INT UNSIGNED NOT NULL,
+              timeOnIce NVARCHAR(10),
+              assists SMALLINT,
+              goals SMALLINT,
+              pim SMALLINT,
+              shots SMALLINT,
+              saves SMALLINT,
+              powerPlaySaves SMALLINT,
+              shortHandedSaves SMALLINT,
+              evenSaves SMALLINT,
+              shortHandedShotsAgainst SMALLINT,
+              evenShotsAgainst SMALLINT,
+              powerPlayShotsAgainst SMALLINT,
+              savePercentage DECIMAL(17,14),
+              PRIMARY KEY(gamePk, personId),
+              CONSTRAINT `fk_game_person_g`
+                 FOREIGN KEY (gamePk, personId) REFERENCES players (gamePk, personId)
+                 ON DELETE CASCADE
+                 ON UPDATE CASCADE
+            )""")
+
+
+        cur.execute("""
+            CREATE TABLE skaterStats (
+              gamePk INT UNSIGNED NOT NULL,
+              personId INT UNSIGNED NOT NULL,
+              timeOnIce NVARCHAR(10),
+              assists SMALLINT,
+              goals SMALLINT,
+              shots SMALLINT,
+              hits SMALLINT,
+              powerPlayGoals SMALLINT,
+              powerPlayAssists SMALLINT,
+              penaltyMinutes SMALLINT,
+              faceOffWins SMALLINT,
+              faceoffTaken SMALLINT,
+              takeaways SMALLINT,
+              giveaways SMALLINT,
+              shortHandedGoals SMALLINT,
+              shortHandedAssists SMALLINT,
+              blocked SMALLINT,
+              plusMinus SMALLINT,
+              evenTimeOnIce NVARCHAR(10),
+              powerPlayTimeOnIce NVARCHAR(10),
+              shortHandedTimeOnIce NVARCHAR(10),
+              PRIMARY KEY(gamePk, personId),
+              CONSTRAINT `fk_game_person_s`
+                 FOREIGN KEY (gamePk, personId) REFERENCES players (gamePk, personId)
+                 ON DELETE CASCADE
+                 ON UPDATE CASCADE
+            )""")
+
+        cur.execute("""
+            CREATE TABLE schema_ver(
+              version SMALLINT UNSIGNED NOT NULL PRIMARY KEY
+            )""")
+        cur.execute('INSERT INTO schema_ver (version) VALUES (1)')
+        conn.commit()
+
 
 def db_store_game(conn, game):
     cur = conn.cursor()
@@ -399,14 +525,20 @@ def db_get_player_stat(conn, personId, gamePk):
     return result
 
 # Entry point
-db_conn = db_connect()
-
-#season = sys.argv[1]
 try:
     arg = sys.argv[1]
 except IndexError:
     arg = 'display'
 
+# Try to connect to DB server
+try:
+    db_conn = db_connect()
+except mariadb.Error as err:
+    print(f'Error no: {err.errno}, msg: {err.msg}')
+    exit(1)
+
+# Update schema if needed
+db_update_schema(db_conn)
 
 if arg == 'update':
     seasons = get_last_seasons(3)
