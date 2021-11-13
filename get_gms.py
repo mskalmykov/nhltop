@@ -1,9 +1,34 @@
 #!/usr/bin/env python
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 import requests
 import sys
 import os
 import mariadb
 
+def get_with_retries(url):
+    # timeout in seconds
+    timeout = 5
+
+    retry_strategy = Retry(
+        total=10,
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor = 0.1
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    http = requests.Session()
+    http.mount("https://", adapter)
+    http.mount("http://", adapter)
+
+    try:
+        reply = http.get(url, timeout=timeout)
+        reply.raise_for_status()
+        return reply.json()
+    except (requests.ConnectionError, requests.Timeout, requests.HTTPError) as err:
+        return {}
+    except requests.exceptions.RequestException as err:
+        print(f'{err}')
+        return {}
 
 def get_last_seasons(count):
     result = []
@@ -14,11 +39,15 @@ def get_last_seasons(count):
 
     baseurl = 'https://statsapi.web.nhl.com/api/v1/seasons/'
 
-    reply = requests.get(baseurl + 'current').json()
+    reply = get_with_retries(baseurl + 'current')
+    if reply == {}:
+        return []
 
     current_season = reply['seasons'][0]['seasonId']
 
-    reply = requests.get(baseurl).json()
+    reply = get_with_retries(baseurl)
+    if reply == {}:
+        return []
 
     if reply['seasons'][-1]['seasonId'] == current_season:
         last = -2
@@ -33,7 +62,9 @@ def get_season_games(season, type):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/schedule?'
 
-    reply = requests.get(baseurl + 'season=' + season + '&gameType=' + type).json()
+    reply = get_with_retries(baseurl + 'season=' + season + '&gameType=' + type)
+    if reply == {}:
+        return []
 
     for date in reply['dates']:
       for game in date['games']:
@@ -55,7 +86,9 @@ def get_game_players(game_id):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/game/'
 
-    reply = requests.get(baseurl + str(game_id) + '/boxscore').json()
+    reply = get_with_retries(baseurl + str(game_id) + '/boxscore')
+    if reply == {}:
+        return []
     
     team_away = reply['teams']['away']['team']
     team_home = reply['teams']['home']['team']
