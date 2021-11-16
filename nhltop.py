@@ -558,49 +558,50 @@ def db_get_player_stat(conn, personId, gamePk):
     return result
 
 # Entry point
-try:
-    arg = sys.argv[1]
-except IndexError:
-    arg = 'display'
+if __name__ == "__main__":
+    try:
+        arg = sys.argv[1]
+    except IndexError:
+        arg = 'display'
 
-# Try to connect to DB server
-try:
-    db_conn = db_connect()
-except mariadb.Error as err:
-    print(f'Error no: {err.errno}, msg: {err.msg}')
-    exit(1)
+    # Try to connect to DB server
+    try:
+        db_conn = db_connect()
+    except mariadb.Error as err:
+        print(f'Error no: {err.errno}, msg: {err.msg}')
+        exit(1)
 
-# Update schema if needed
-db_update_schema(db_conn)
+    # Update schema if needed
+    db_update_schema(db_conn)
 
-if arg == 'update':
-    seasons = get_last_seasons(3)
+    if arg == 'update':
+        seasons = get_last_seasons(3)
 
-    for season in seasons:
-        all_stars_games = get_season_games(season, 'A')
-        playoff_games = get_season_games(season, 'P')
+        for season in seasons:
+            all_stars_games = get_season_games(season, 'A')
+            playoff_games = get_season_games(season, 'P')
 
-        final_games = []
-        for game in playoff_games:
-            if str(game['gamePk'])[7] == '4':
-                final_games.append(game)
+            final_games = []
+            for game in playoff_games:
+                if str(game['gamePk'])[7] == '4':
+                    final_games.append(game)
 
-        for game in all_stars_games + final_games:
-            players = get_game_players(game['gamePk'])
-            db_store_game(db_conn, game)
-            for p in players:
-                db_store_player_stat(db_conn, game, p)
+            for game in all_stars_games + final_games:
+                players = get_game_players(game['gamePk'])
+                db_store_game(db_conn, game)
+                for p in players:
+                    db_store_player_stat(db_conn, game, p)
 
-else:
-    seasons = db_get_seasons(db_conn)
+    else:
+        seasons = db_get_seasons(db_conn)
 
-    print('Players, who took part both in All-stars and Final games:')
+        print('Players, who took part both in All-stars and Final games:')
 
-    for season in seasons['seasons']:
-        print(f'Season: {season}')
+        for season in seasons['seasons']:
+            print(f'Season: {season}')
 
-        top_players = db_get_top_players(db_conn, season)
-        for player in top_players['players']:
-            print(db_get_player_stat(db_conn, player['personId'], player['gamePk']))
-            print(db_get_game(db_conn, player['gamePk']), '\n')
+            top_players = db_get_top_players(db_conn, season)
+            for player in top_players['players']:
+                print(db_get_player_stat(db_conn, player['personId'], player['gamePk']))
+                print(db_get_game(db_conn, player['gamePk']), '\n')
 
