@@ -501,59 +501,59 @@ def db_get_player_stat(conn, personId, gamePk):
         result['positionName'] = positionName
         result['teamName'] = teamName
 
-    if positionName == 'Goalie':
-        # Get goalie stat
-        cur.execute("""SELECT * FROM goalieStats 
-                       WHERE personId = ? AND gamePk = ?""",
-                    (personId, gamePk))
-        result['goalieStats'] = {}
-        for (gamePk, personId, timeOnIce, assists, goals, pim, shots, saves,
-              powerPlaySaves, shortHandedSaves, evenSaves,
-              shortHandedShotsAgainst, evenShotsAgainst,
-              powerPlayShotsAgainst, savePercentage ) in cur:
-            result['goalieStats']['timeOnIce'] = timeOnIce
-            result['goalieStats']['assists'] = assists
-            result['goalieStats']['goals'] = goals
-            result['goalieStats']['pim'] = pim
-            result['goalieStats']['shots'] = shots
-            result['goalieStats']['saves'] = saves
-            result['goalieStats']['powerPlaySaves'] = powerPlaySaves
-            result['goalieStats']['shortHandedSaves'] = shortHandedSaves
-            result['goalieStats']['evenSaves'] = evenSaves
-            result['goalieStats']['shortHandedShotsAgainst'] = shortHandedShotsAgainst
-            result['goalieStats']['evenShotsAgainst'] = evenShotsAgainst
-            result['goalieStats']['powerPlayShotsAgainst'] = powerPlayShotsAgainst
-            result['goalieStats']['savePercentage'] = savePercentage
-    else:
-        # Get skater stat
-        cur.execute("""SELECT * FROM skaterStats 
-                       WHERE personId = ? AND gamePk = ?""",
-                    (personId, gamePk))
-        result['skaterStats'] = {}
-        for (gamePk, personId, timeOnIce, assists, goals, shots, hits,
-             powerPlayGoals, powerPlayAssists, penaltyMinutes, faceOffWins,
-             faceoffTaken, takeaways, giveaways, shortHandedGoals,
-             shortHandedAssists, blocked, plusMinus, evenTimeOnIce,
-             powerPlayTimeOnIce, shortHandedTimeOnIce) in cur:
-            result['skaterStats']['timeOnIce'] = timeOnIce
-            result['skaterStats']['assists'] = assists
-            result['skaterStats']['goals'] = goals
-            result['skaterStats']['shots'] = shots
-            result['skaterStats']['hits'] = hits
-            result['skaterStats']['powerPlayGoals'] = powerPlayGoals
-            result['skaterStats']['powerPlayAssists'] = powerPlayAssists
-            result['skaterStats']['penaltyMinutes'] = penaltyMinutes
-            result['skaterStats']['faceOffWins'] = faceOffWins
-            result['skaterStats']['faceoffTaken'] = faceoffTaken
-            result['skaterStats']['takeaways'] = takeaways
-            result['skaterStats']['giveaways'] = giveaways
-            result['skaterStats']['shortHandedGoals'] = shortHandedGoals
-            result['skaterStats']['shortHandedAssists'] = shortHandedAssists
-            result['skaterStats']['blocked'] = blocked
-            result['skaterStats']['plusMinus'] = plusMinus
-            result['skaterStats']['evenTimeOnIce'] = evenTimeOnIce
-            result['skaterStats']['powerPlayTimeOnIce'] = powerPlayTimeOnIce
-            result['skaterStats']['shortHandedTimeOnIce'] = shortHandedTimeOnIce
+        if positionName == 'Goalie':
+            # Get goalie stat
+            cur.execute("""SELECT * FROM goalieStats 
+                           WHERE personId = ? AND gamePk = ?""",
+                        (personId, gamePk))
+            result['goalieStats'] = {}
+            for (gamePk, personId, timeOnIce, assists, goals, pim, shots, saves,
+                  powerPlaySaves, shortHandedSaves, evenSaves,
+                  shortHandedShotsAgainst, evenShotsAgainst,
+                  powerPlayShotsAgainst, savePercentage ) in cur:
+                result['goalieStats']['timeOnIce'] = timeOnIce
+                result['goalieStats']['assists'] = assists
+                result['goalieStats']['goals'] = goals
+                result['goalieStats']['pim'] = pim
+                result['goalieStats']['shots'] = shots
+                result['goalieStats']['saves'] = saves
+                result['goalieStats']['powerPlaySaves'] = powerPlaySaves
+                result['goalieStats']['shortHandedSaves'] = shortHandedSaves
+                result['goalieStats']['evenSaves'] = evenSaves
+                result['goalieStats']['shortHandedShotsAgainst'] = shortHandedShotsAgainst
+                result['goalieStats']['evenShotsAgainst'] = evenShotsAgainst
+                result['goalieStats']['powerPlayShotsAgainst'] = powerPlayShotsAgainst
+                result['goalieStats']['savePercentage'] = savePercentage
+        else:
+            # Get skater stat
+            cur.execute("""SELECT * FROM skaterStats 
+                           WHERE personId = ? AND gamePk = ?""",
+                        (personId, gamePk))
+            result['skaterStats'] = {}
+            for (gamePk, personId, timeOnIce, assists, goals, shots, hits,
+                 powerPlayGoals, powerPlayAssists, penaltyMinutes, faceOffWins,
+                 faceoffTaken, takeaways, giveaways, shortHandedGoals,
+                 shortHandedAssists, blocked, plusMinus, evenTimeOnIce,
+                 powerPlayTimeOnIce, shortHandedTimeOnIce) in cur:
+                result['skaterStats']['timeOnIce'] = timeOnIce
+                result['skaterStats']['assists'] = assists
+                result['skaterStats']['goals'] = goals
+                result['skaterStats']['shots'] = shots
+                result['skaterStats']['hits'] = hits
+                result['skaterStats']['powerPlayGoals'] = powerPlayGoals
+                result['skaterStats']['powerPlayAssists'] = powerPlayAssists
+                result['skaterStats']['penaltyMinutes'] = penaltyMinutes
+                result['skaterStats']['faceOffWins'] = faceOffWins
+                result['skaterStats']['faceoffTaken'] = faceoffTaken
+                result['skaterStats']['takeaways'] = takeaways
+                result['skaterStats']['giveaways'] = giveaways
+                result['skaterStats']['shortHandedGoals'] = shortHandedGoals
+                result['skaterStats']['shortHandedAssists'] = shortHandedAssists
+                result['skaterStats']['blocked'] = blocked
+                result['skaterStats']['plusMinus'] = plusMinus
+                result['skaterStats']['evenTimeOnIce'] = evenTimeOnIce
+                result['skaterStats']['powerPlayTimeOnIce'] = powerPlayTimeOnIce
+                result['skaterStats']['shortHandedTimeOnIce'] = shortHandedTimeOnIce
 
     return result
 

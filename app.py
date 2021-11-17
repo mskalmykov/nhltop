@@ -7,7 +7,40 @@ app = Flask(__name__)
 
 @app.route('/')
 def rt_main():
-    return '<p>Main page</p>'
+    # Try to connect to DB server
+    try:
+        db_conn = nhltop.db_connect()
+    except mariadb.Error as err:
+        return f'<p>Error no: {err.errno}, msg: {err.msg}</p>'
+
+    # Update schema if needed
+    nhltop.db_update_schema(db_conn)
+
+    seasons = nhltop.db_get_seasons(db_conn)
+
+    body = '<h1>Players, who took part both in All-stars and Final games:</h1>\n'
+
+    for season in seasons['seasons']:
+        body = body + f'<h2>Season: {season}</h2>\n'
+
+        top_players = nhltop.db_get_top_players(db_conn, season)
+        for player in top_players['players']:
+            gamePk = player['gamePk']
+            personId = player['personId']
+
+            body = body + f'<p>gamePk = {gamePk}</p>\n'
+            body = body + f'<p>personId = {personId}</p>\n'
+            body = body + '<p>' + \
+                str(nhltop.db_get_player_stat(db_conn, personId, gamePk)) + '</p>\n'
+            body = body + '<p>' + \
+                str(nhltop.db_get_game(db_conn, gamePk)) + '</p>\n'
+
+    return body
+
+# Health check page
+@app.route('/check/')
+def rt_check():
+    return 'ok'
 
 @app.route('/update/')
 def rt_update():
@@ -16,7 +49,6 @@ def rt_update():
         db_conn = nhltop.db_connect()
     except mariadb.Error as err:
         return f'<p>Error no: {err.errno}, msg: {err.msg}</p>'
-        exit(1)
 
     # Update schema if needed
     nhltop.db_update_schema(db_conn)
@@ -44,9 +76,27 @@ def rt_update():
 
 @app.route('/stats/', methods=['GET'])
 def rt_stats():
+    # Try to connect to DB server
+    try:
+        db_conn = nhltop.db_connect()
+    except mariadb.Error as err:
+        return f'<p>Error no: {err.errno}, msg: {err.msg}</p>'
+
+    # Update schema if needed
+    nhltop.db_update_schema(db_conn)
+
+    # Parse arguments
     gamePk = request.args.get('gamePk', 0, type=int)
     personId = request.args.get('personId', 0, type=int)
-    return(f'<p>gamePk = {gamePk}</p>\n<p>personId = {personId}</p>')
+
+    body = '<h1>Final game statistics:</h1>\n'
+
+    body = body + '<p>' + \
+        str(nhltop.db_get_player_stat(db_conn, personId, gamePk)) + '</p>\n'
+    body = body + '<p>' + \
+        str(nhltop.db_get_game(db_conn, gamePk)) + '</p>\n'
+
+    return body
 
 
 if __name__ == '__main__':
