@@ -110,10 +110,10 @@ def get_game_players(game_id):
     return result
 
 def db_connect():
-    username = os.environ.get('db_username')
-    password = os.environ.get('db_password')
-    host = os.environ.get('db_host')
-    database = os.environ.get('db_name')
+    username = os.environ.get('DB_USER')
+    password = os.environ.get('DB_PASSWORD')
+    host = os.environ.get('DB_HOST')
+    database = os.environ.get('DB_NAME')
 
     return mariadb.connect(
         username = username,
@@ -407,12 +407,12 @@ def db_store_player_stat(conn, game, player):
 
 def db_get_seasons(conn):
     cur = conn.cursor()
-    result = {'seasons': []}
+    result = []
 
     cur.execute('SELECT DISTINCT season FROM games') 
 
     for (season,) in cur:
-        result['seasons'].append(season)
+        result.append(season)
 
     return result
 
@@ -597,7 +597,7 @@ if __name__ == "__main__":
 
         print('Players, who took part both in All-stars and Final games:')
 
-        for season in seasons['seasons']:
+        for season in seasons:
             print(f'Season: {season}')
 
             top_players = db_get_top_players(db_conn, season)

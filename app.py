@@ -18,9 +18,16 @@ def rt_main():
 
     seasons = nhltop.db_get_seasons(db_conn)
 
+    if not seasons:
+        db_conn.close()
+        body = """<p>The database is empty. Click <a href="/update/">here</a>
+                     to fetch the data from the NHL API.</p>"""
+        return body
+
+
     body = '<h1>Players, who took part both in All-stars and Final games:</h1>\n'
 
-    for season in seasons['seasons']:
+    for season in seasons:
         body = body + f'<h2>Season: {season}</h2>\n'
 
         top_players = nhltop.db_get_top_players(db_conn, season)
@@ -35,6 +42,7 @@ def rt_main():
             body = body + '<p>' + \
                 str(nhltop.db_get_game(db_conn, gamePk)) + '</p>\n'
 
+    db_conn.close()
     return body
 
 # Health check page
@@ -42,8 +50,9 @@ def rt_main():
 def rt_check():
     return 'ok'
 
+@app.route('/update/<int:count>')
 @app.route('/update/')
-def rt_update():
+def rt_update(count = 3):
     # Try to connect to DB server
     try:
         db_conn = nhltop.db_connect()
@@ -53,8 +62,17 @@ def rt_update():
     # Update schema if needed
     nhltop.db_update_schema(db_conn)
 
-    seasons_count = request.args.get('count', 3, type=int)
-    seasons = nhltop.get_last_seasons(seasons_count)
+    #seasons_count = request.args.get('count', 3, type=int)
+    if (count < 1):
+        count = 1
+
+    if (count > 15) and (count < 19171918):
+        count = 15
+
+    if count < 16:
+        seasons = nhltop.get_last_seasons(count)
+    else:
+        seasons = [ str(count) ]
 
     for season in seasons:
         all_stars_games = nhltop.get_season_games(season, 'A')
@@ -72,9 +90,9 @@ def rt_update():
                 nhltop.db_store_player_stat(db_conn, game, p)
 
     db_conn.close()
-    return '<p>Database is updated</p>'
+    return '<p>Database is updated. <a href="/">Return to the main page</a> to view.</p>'
 
-@app.route('/stats/', methods=['GET'])
+@app.route('/stats', methods=['GET'])
 def rt_stats():
     # Try to connect to DB server
     try:
