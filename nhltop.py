@@ -314,6 +314,9 @@ def db_store_player_stat(conn, game, player):
     )
     # Save goalie stats
     if player['position']['name'] == 'Goalie':
+        # Check for missing keys
+        player['stats']['goalieStats']['savePercentage'] = player['stats']['goalieStats'].get('savePercentage', 0)
+        # Save data
         cur.execute("""
             REPLACE INTO goalieStats (
                gamePk,
@@ -353,6 +356,13 @@ def db_store_player_stat(conn, game, player):
         )
     # Save skater stats
     else:
+        # Check for missing keys
+        player['stats']['skaterStats']['hits'] = player['stats']['skaterStats'].get('hits', 0)
+        player['stats']['skaterStats']['takeaways'] =  player['stats']['skaterStats'].get('takeaways', 0)
+        player['stats']['skaterStats']['giveaways'] =  player['stats']['skaterStats'].get('giveaways', 0)
+        player['stats']['skaterStats']['blocked'] = player['stats']['skaterStats'].get('blocked', 0)
+
+        # Save
         cur.execute("""
             REPLACE INTO skaterStats (
                gamePk,

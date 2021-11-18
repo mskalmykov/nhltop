@@ -72,10 +72,10 @@ def rt_update(count = 3):
     if (count < 1):
         count = 1
 
-    if (count > 10) and (count < 19171918):
-        count = 10
+    if (count > 15) and (count < 20062007):
+        count = 15
 
-    if count < 11:
+    if count <= 15:
         seasons = nhltop.get_last_seasons(count)
     else:
         seasons = [ str(count) ]
