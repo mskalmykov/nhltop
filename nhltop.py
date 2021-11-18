@@ -449,14 +449,14 @@ def db_get_top_players(conn, season):
 
     for player in players:
         cur.execute("""
-            SELECT p.personId, p.gamePk, g.gameType, g.season 
+            SELECT p.personId, p.gamePk, p.fullName, g.gameType, g.season 
             FROM players p INNER JOIN games g ON p.gamePk = g.gamePk
             WHERE g.gameType = 'P' AND p.personId = ? AND g.season = ?
             ORDER BY g.gamePk DESC LIMIT 1""",
             (player, season)
         )
-        for (personId, gamePk, gameType, season) in cur:
-            result['players'].append({'personId': personId, 'gamePk': gamePk})
+        for (personId, gamePk, fullName, gameType, season) in cur:
+            result['players'].append({'personId': personId, 'fullName': fullName, 'gamePk': gamePk})
 
     return result
 

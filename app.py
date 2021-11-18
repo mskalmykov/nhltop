@@ -5,6 +5,14 @@ import nhltop
 
 app = Flask(__name__)
 
+# prevent cached responses
+@app.after_request
+def add_header(response):
+    response.cache_control.no_cache = True
+    response.cache_control.no_store = True
+
+    return response
+
 @app.route('/')
 def rt_main():
     # Try to connect to DB server
@@ -28,19 +36,17 @@ def rt_main():
     body = '<h1>Players, who took part both in All-stars and Final games:</h1>\n'
 
     for season in seasons:
-        body = body + f'<h2>Season: {season}</h2>\n'
+        body = body + f'<h2>Season: {str(season)[:4]}-{str(season)[4:]}</h2>\n'
 
         top_players = nhltop.db_get_top_players(db_conn, season)
+
         for player in top_players['players']:
             gamePk = player['gamePk']
             personId = player['personId']
+            fullName = player['fullName']
 
-            body = body + f'<p>gamePk = {gamePk}</p>\n'
-            body = body + f'<p>personId = {personId}</p>\n'
-            body = body + '<p>' + \
-                str(nhltop.db_get_player_stat(db_conn, personId, gamePk)) + '</p>\n'
-            body = body + '<p>' + \
-                str(nhltop.db_get_game(db_conn, gamePk)) + '</p>\n'
+            body = body + f'<p><a href="/stats?gamePk={gamePk}&personId={personId}">'
+            body = body + f'{fullName}</a></p>'
 
     db_conn.close()
     return body
@@ -66,10 +72,10 @@ def rt_update(count = 3):
     if (count < 1):
         count = 1
 
-    if (count > 15) and (count < 19171918):
-        count = 15
+    if (count > 10) and (count < 19171918):
+        count = 10
 
-    if count < 16:
+    if count < 11:
         seasons = nhltop.get_last_seasons(count)
     else:
         seasons = [ str(count) ]
@@ -113,6 +119,8 @@ def rt_stats():
         str(nhltop.db_get_player_stat(db_conn, personId, gamePk)) + '</p>\n'
     body = body + '<p>' + \
         str(nhltop.db_get_game(db_conn, gamePk)) + '</p>\n'
+
+    db_conn.close()
 
     return body
 
