@@ -11,7 +11,9 @@ FROM python:3.9-slim
 RUN apt-get update && apt-get -y install libmariadb3 libmariadb-dev
 COPY --from=builder /usr/local/lib/python3.9/site-packages/ /usr/local/lib/python3.9/site-packages/
 WORKDIR /app
-COPY ./nhltop.py .
-COPY ./app.py .
+COPY ./nhltop.py ./
+COPY ./app.py ./
+COPY ./static/ ./static/
+COPY ./templates/ ./templates/
 EXPOSE 5000
 CMD ["python", "-m", "flask", "run", "-h", "0.0.0.0"]
