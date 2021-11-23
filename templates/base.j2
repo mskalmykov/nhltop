@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    {% block head %}
+    <link rel="stylesheet" href="static/style.css">
+    <title>{% block title %}{% endblock %}</title>
+    {% endblock %}
+  </head>
+  <body>
+   <div id="con">
+    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="footer">
+      {% block footer %}
+      &copy; 2021 <a href="https://github.com/mskalmykov">Mikhail Kalmykov</a>.
+      {% endblock %}
+    </div>
+   </div>
+  </body>
+</html>

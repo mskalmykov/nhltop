@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from markupsafe import escape
 import mariadb
 import nhltop
@@ -25,18 +25,15 @@ def rt_main():
     nhltop.db_update_schema(db_conn)
 
     seasons = nhltop.db_get_seasons(db_conn)
+    content = ''
 
     if not seasons:
         db_conn.close()
-        body = """<p>The database is empty. Click <a href="/update/">here</a>
+        return f"""<p>The database is empty. Click <a href="/update/">here</a>
                      to fetch the data from the NHL API.</p>"""
-        return body
-
-
-    body = '<h1>Players, who took part both in All-stars and Final games:</h1>\n'
 
     for season in seasons:
-        body = body + f'<h2>Season: {str(season)[:4]}-{str(season)[4:]}</h2>\n'
+        content = content + f'<h2>Season: {str(season)[:4]}-{str(season)[4:]}</h2>\n'
 
         top_players = nhltop.db_get_top_players(db_conn, season)
 
@@ -45,11 +42,11 @@ def rt_main():
             personId = player['personId']
             fullName = player['fullName']
 
-            body = body + f'<p><a href="/stats?gamePk={gamePk}&personId={personId}">'
-            body = body + f'{fullName}</a></p>'
+            content = content + f'<p><a href="/stats?gamePk={gamePk}&personId={personId}">'
+            content = content + f'{fullName}</a></p>'
 
     db_conn.close()
-    return body
+    return render_template('main.j2', c=content)
 
 # Health check page
 @app.route('/check/')
@@ -113,12 +110,12 @@ def rt_stats():
     gamePk = request.args.get('gamePk', 0, type=int)
     personId = request.args.get('personId', 0, type=int)
 
-    body = '<h1>Final game statistics:</h1>\n'
+    # Fetch statistics from DB
+    game_stat = nhltop.db_get_game(db_conn, gamePk)
+    player_stat = nhltop.db_get_player_stat(db_conn, personId, gamePk)
 
-    body = body + '<p>' + \
-        str(nhltop.db_get_player_stat(db_conn, personId, gamePk)) + '</p>\n'
-    body = body + '<p>' + \
-        str(nhltop.db_get_game(db_conn, gamePk)) + '</p>\n'
+    # Fill template with data
+    body = render_template('stats.j2', g=game_stat, p=player_stat)
 
     db_conn.close()
 
