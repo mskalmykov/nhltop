@@ -9,11 +9,6 @@ spec:
   selector:
     matchLabels:
       app: nhltop
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -24,12 +19,21 @@ spec:
         - name: DB_USER
           value: nhltop
         - name: DB_PASSWORD
-          value: {{ db_password }}
+          valueFrom:
+            secretKeyRef:
+              name: appsec
+              key: db_password
         - name: DB_NAME
-          value: {{ db_name }}
+          valueFrom:
+            configMapKeyRef:
+              name: appconf
+              key: db_name
         - name: DB_HOST
-          value: {{ db_host }}
-        image: {{ registry_address }}/nhltop:latest
+          valueFrom:
+            configMapKeyRef:
+              name: appconf
+              key: db_host
+        image: to_be_overrided_by_kubectl_set_image
         imagePullPolicy: Always
         name: nhltop
         ports:
