@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nhltop
+  name: nhltop
+  namespace: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nhltop
+  template:
+    metadata:
+      labels:
+        app: nhltop
+    spec:
+      containers:
+      - env:
+        - name: DB_USER
+          value: nhltop
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: appsec
+              key: db_password
+        - name: DB_NAME
+          value: test
+        - name: DB_HOST
+          value: mskepamdiplomadb.mariadb.database.azure.com
+        image: mskepamdiplomaacr.azurecr.io/nhltop:1.0
+        imagePullPolicy: Always
+        name: nhltop
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.kubernetes.io/azure-dns-label-name: msk-epam-diploma-dev
+  labels:
+    app: nhltop
+  name: nhltop
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: nhltop
+  sessionAffinity: None
+  type: LoadBalancer
