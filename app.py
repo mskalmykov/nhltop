@@ -1,9 +1,11 @@
 from flask import Flask, request, render_template
+from prometheus_flask_exporter import PrometheusMetrics
 from markupsafe import escape
 import mariadb
 import nhltop
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 # prevent cached responses
 @app.after_request
