@@ -31,6 +31,10 @@ resource "azurerm_resource_group" "rg" {
   }
 }
 
+resource "random_id" "log_analytics_workspace_name_suffix" {
+  byte_length = 8
+}
+
 resource "azurerm_kubernetes_cluster" "k8s" {
   name                = var.cluster_name
   location            = azurerm_resource_group.rg.location
@@ -57,6 +61,13 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   auto_scaler_profile {
     scale_down_delay_after_add = "2m"
     scale_down_unneeded        = "2m"
+  }
+
+  addon_profile {
+    oms_agent {
+      enabled                    = true
+      log_analytics_workspace_id = azurerm_log_analytics_workspace.default.id
+    }
   }
 
   identity {
@@ -118,4 +129,96 @@ resource "azurerm_mariadb_firewall_rule" "db_firewall_rule" {
   server_name         = azurerm_mariadb_server.dbsrv.name
   start_ip_address    = "0.0.0.0"
   end_ip_address      = "0.0.0.0"
+}
+
+resource "azurerm_log_analytics_workspace" "default" {
+  name                = "${var.log_analytics_workspace_name}-${random_id.log_analytics_workspace_name_suffix.dec}"
+  location            = var.log_analytics_workspace_location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = var.log_analytics_workspace_sku
+}
+
+resource "azurerm_log_analytics_solution" "ContainerInsights" {
+  solution_name         = "ContainerInsights"
+  location              = azurerm_log_analytics_workspace.default.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  workspace_resource_id = azurerm_log_analytics_workspace.default.id
+  workspace_name        = azurerm_log_analytics_workspace.default.name
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/ContainerInsights"
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "diag_setting_aks" {
+  name                       = "diag_setting_aks"
+  target_resource_id         = azurerm_kubernetes_cluster.k8s.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.default.id
+
+  log {
+    category = "kube-apiserver"
+  }
+  log {
+    category = "cloud-controller-manager"
+  }
+  log {
+    category = "cluster-autoscaler"
+  }
+  log {
+    category = "guard"
+  }
+  log {
+    category = "kube-apiserver"
+  }
+  log {
+    category = "kube-audit"
+  }
+  log {
+    category = "kube-audit-admin"
+  }
+  log {
+    category = "kube-controller-manager"
+  }
+  log {
+    category = "kube-scheduler"
+  }
+
+  metric {
+    category = "AllMetrics"
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "diag_setting_acr" {
+  name                       = "diag_setting_acr"
+  target_resource_id         = azurerm_container_registry.acr.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.default.id
+
+  log {
+    category = "ContainerRegistryRepositoryEvents"
+  }
+  log {
+    category = "ContainerRegistryLoginEvents"
+  }
+
+  metric {
+    category = "AllMetrics"
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "diag_setting_db" {
+  name                       = "diag_setting_db"
+  target_resource_id         = azurerm_mariadb_server.dbsrv.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.default.id
+
+  log {
+    category = "MySqlSlowLogs"
+  }
+  log {
+    category = "MySqlAuditLogs"
+  }
+
+  metric {
+    category = "AllMetrics"
+  }
 }
