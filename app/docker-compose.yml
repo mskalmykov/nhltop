@@ -14,7 +14,7 @@ services:
       - private
 
   database:
-    image: mariadb:10.5
+    image: mariadb:10.3
     restart: always
     ports:
       - 3306:3306
