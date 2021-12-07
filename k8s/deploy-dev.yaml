@@ -55,11 +55,13 @@ metadata:
     service.beta.kubernetes.io/azure-dns-label-name: msk-epam-diploma-dev
   labels:
     app: nhltop
+    release: prometheus
   name: nhltop
   namespace: dev
 spec:
   ports:
-  - port: 80
+  - name: web
+    port: 80
     protocol: TCP
     targetPort: 5000
   selector:
