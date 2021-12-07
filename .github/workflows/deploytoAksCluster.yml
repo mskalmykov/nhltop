@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: mskepamdiplomaacr.azurecr.io
+        username: ${{ secrets.acr_mskepamdiplomaacr_username }}
+        password: ${{ secrets.acr_mskepamdiplomaacr_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/app" -f  "app/Dockerfile" -t mskepamdiplomaacr.azurecr.io/aks1:${{ github.sha }} --label dockerfile-path=app/Dockerfile
+        docker push mskepamdiplomaacr.azurecr.io/aks1:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_aks1_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep dev | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace dev`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: dev
+        container-registry-url: mskepamdiplomaacr.azurecr.io
+        container-registry-username: ${{ secrets.acr_mskepamdiplomaacr_username }}
+        container-registry-password: ${{ secrets.acr_mskepamdiplomaacr_password }}
+        secret-name: aks1dockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: dev
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          mskepamdiplomaacr.azurecr.io/aks1:${{ github.sha }}
+        imagepullsecrets: |
+          aks1dockerauth

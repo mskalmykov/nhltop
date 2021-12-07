@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "aks1-6015"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "aks1-6015"
+  template:
+    metadata:
+      labels:
+        app: "aks1-6015"
+    spec:
+      containers:
+        - name: "aks1-6015"
+          image: "mskepamdiplomaacr.azurecr.io/aks1"
+          ports:
+          - containerPort: 5000
