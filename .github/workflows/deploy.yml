@@ -1,9 +1,11 @@
+name: Build and deploy
 on:
   push:
+    branches:
+      - main
+      - dev
     paths:
       - app/**
-    tags:
-      - v[0-9].[0-9]+
 env:
   ACR: mskepamdiplomaacr.azurecr.io
 jobs:
@@ -12,20 +14,24 @@ jobs:
     steps:
     - name: Checkout repository 
       uses: actions/checkout@v2
-    
+      with:
+        fetch-depth: 0  # For SonarCloud - fetch full repo
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     - name: Set environment variables
       run: |
-        GIT_BRANCH=`git branch --show-current`
-        echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
-        GIT_TAG=${GITHUB_REF#refs/tags/v}
-        echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
         # Set k8s namespace name
-        if [ $GIT_BRANCH = 'main' ]
+        if [ $GITHUB_REF_NAME = 'main' ]
           then echo "NAMESPACE=prod" >> $GITHUB_ENV
           else echo "NAMESPACE=dev"  >> $GITHUB_ENV
         fi
         # Set docker image path
-        echo "IMAGE=${{ env.ACR }}/nhltop:$GIT_TAG" >> $GITHUB_ENV
+        echo "IMAGE=${{ env.ACR }}/nhltop:$GITHUB_SHA" >> $GITHUB_ENV
 
     - name: Login to container registry 
       uses: azure/docker-login@v1

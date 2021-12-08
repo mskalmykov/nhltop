@@ -70,7 +70,6 @@ def rt_update(count = 3):
     # Update schema if needed
     nhltop.db_update_schema(db_conn)
 
-    #seasons_count = request.args.get('count', 3, type=int)
     if (count < 1):
         count = 1
 
