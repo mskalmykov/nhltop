@@ -12,10 +12,9 @@ jobs:
     steps:
     - name: Get version tag and branch
       run: |
-        # Short name for current branch. For PRs, use target branch (base ref)
-        GIT_BRANCH=${GITHUB_BASE_REF:-${GITHUB_REF#refs/heads/}}
+        GIT_BRANCH=${GITHUB_REF#refs/heads/}
         echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
-        GIT_TAG=${GITHUB_REF#refs/tags/}
+        GIT_TAG=${GITHUB_REF#refs/tags/v}
         echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
         # Set k8s namespace name
         if [ $GIT_BRANCH = 'main' ]
