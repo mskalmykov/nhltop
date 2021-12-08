@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nhltop-metrics
+  namespace: monitoring
+  labels:
+    app: nhltop
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: nhltop
+  namespaceSelector:
+    any: true
+  endpoints:
+  - port: web
+    path: "/metrics"

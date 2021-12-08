@@ -1,0 +1,4 @@
+requests
+mariadb
+Flask
+prometheus_flask_exporter

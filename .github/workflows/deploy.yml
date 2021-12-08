@@ -1,0 +1,61 @@
+name: Build and deploy
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - app/**
+env:
+  ACR: mskepamdiplomaacr.azurecr.io
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout repository 
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # For SonarCloud - fetch full repo
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    - name: Set environment variables
+      run: |
+        # Set k8s namespace name
+        if [ $GITHUB_REF_NAME = 'main' ]
+          then echo "NAMESPACE=prod" >> $GITHUB_ENV
+          else echo "NAMESPACE=dev"  >> $GITHUB_ENV
+        fi
+        # Set docker image path
+        echo "IMAGE=${{ env.ACR }}/nhltop:$GITHUB_SHA" >> $GITHUB_ENV
+
+    - name: Login to container registry 
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.ACR }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+    
+    - name: Build and push image
+      run: |
+        docker build "$GITHUB_WORKSPACE/app" \
+               -f "app/Dockerfile" \
+               -t ${{ env.IMAGE }} \
+               --label dockerfile-path=app/Dockerfile
+        docker push ${{ env.IMAGE }}
+    
+    - name: Set kubernetes context
+      uses: azure/k8s-set-context@v2
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+    - name: Set deployment image
+      run: |
+        kubectl -n ${{ env.NAMESPACE }} \
+          set image deploy/nhltop *=${{ env.IMAGE }}
+

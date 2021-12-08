@@ -1,9 +1,11 @@
 from flask import Flask, request, render_template
+from prometheus_flask_exporter import PrometheusMetrics
 from markupsafe import escape
 import mariadb
 import nhltop
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 # prevent cached responses
 @app.after_request
@@ -19,7 +21,8 @@ def rt_main():
     try:
         db_conn = nhltop.db_connect()
     except mariadb.Error as err:
-        return f'<p>Error no: {err.errno}, msg: {err.msg}</p>'
+        return render_template('msg.j2', title = 'Database error', 
+                                message = f'<p>Error no: {err.errno}, msg: {err.msg}</p>')
 
     # Update schema if needed
     nhltop.db_update_schema(db_conn)
@@ -29,8 +32,9 @@ def rt_main():
 
     if not seasons:
         db_conn.close()
-        return f"""<p>The database is empty. Click <a href="/update/">here</a>
-                     to fetch the data from the NHL API.</p>"""
+        return render_template('msg.j2', title = 'Database empty', 
+                                message = """<p>The database is empty. Click <a href="/update/">here</a>
+                                             to fetch the data from the NHL API.</p>""")
 
     for season in seasons:
         content = content + f'<h2>Season: {str(season)[:4]}-{str(season)[4:]}</h2>\n'
@@ -60,12 +64,12 @@ def rt_update(count = 3):
     try:
         db_conn = nhltop.db_connect()
     except mariadb.Error as err:
-        return f'<p>Error no: {err.errno}, msg: {err.msg}</p>'
+        return render_template('msg.j2', title = 'Database error',
+                                message = f'<p>Error no: {err.errno}, msg: {err.msg}</p>')
 
     # Update schema if needed
     nhltop.db_update_schema(db_conn)
 
-    #seasons_count = request.args.get('count', 3, type=int)
     if (count < 1):
         count = 1
 
@@ -93,7 +97,9 @@ def rt_update(count = 3):
                 nhltop.db_store_player_stat(db_conn, game, p)
 
     db_conn.close()
-    return '<p>Database is updated. <a href="/">Return to the main page</a> to view.</p>'
+    return render_template('msg.j2', title = 'Database updated',
+                            message = """<p>Database is updated.
+                              <a href="/">Return to the main page</a> to view.</p>""")
 
 @app.route('/stats', methods=['GET'])
 def rt_stats():

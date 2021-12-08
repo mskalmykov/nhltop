@@ -18,7 +18,6 @@ def get_with_retries(url):
     adapter = HTTPAdapter(max_retries=retry_strategy)
     http = requests.Session()
     http.mount("https://", adapter)
-    http.mount("http://", adapter)
 
     try:
         reply = http.get(url, timeout=timeout)
