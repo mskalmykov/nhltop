@@ -10,9 +10,12 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-20.04
     steps:
-    - name: Get version tag and branch
+    - name: Checkout repository 
+      uses: actions/checkout@v2
+    
+    - name: Set environment variables
       run: |
-        GIT_BRANCH=${GITHUB_REF#refs/heads/}
+        GIT_BRANCH=`git branch --show-current`
         echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
         GIT_TAG=${GITHUB_REF#refs/tags/v}
         echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
@@ -24,9 +27,6 @@ jobs:
         # Set docker image path
         echo "IMAGE=${{ env.ACR }}/nhltop:$GIT_TAG" >> $GITHUB_ENV
 
-    - name: Checkout repository 
-      uses: actions/checkout@v2
-    
     - name: Login to container registry 
       uses: azure/docker-login@v1
       with:
