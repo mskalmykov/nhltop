@@ -60,6 +60,7 @@ def rt_check():
 
 # CPU burning routine (to initiate autoscaling)
 @app.route('/cpuburn/<int:seconds>')
+@app.route('/cpuburn/')
 def cpu_burn(seconds = 60):
     load_all_cores(duration_s=seconds, target_load=1.0)
     return render_template('msg.j2', title = 'CPU burner', message = 'CPU stress complete')
