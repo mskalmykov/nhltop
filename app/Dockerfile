@@ -23,12 +23,9 @@ RUN groupadd --gid 9999 nhltop \
 USER nhltop
 COPY ./nhltop.py ./
 COPY ./app.py ./
-COPY ./wsgi.py ./
 COPY ./static/ ./static/
 COPY ./templates/ ./templates/
 EXPOSE 5000
 HEALTHCHECK --interval=20s --timeout=5s --retries=3 \
     CMD curl --fail http://localhost:5000/check/ || exit 1
-#CMD ["python", "-m", "flask", "run", "-h", "0.0.0.0"]
-CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:5000", \
-     "--access-logfile", "-", "--error-logfile", "-", "wsgi:app"]
+CMD ["python", "-m", "flask", "run", "-h", "0.0.0.0"]
