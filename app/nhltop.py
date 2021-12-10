@@ -6,6 +6,7 @@ import sys
 import os
 import mariadb
 
+# Wrap requests.get function to survive long site reply delays
 def get_with_retries(url):
     # timeout in seconds
     timeout = 5
