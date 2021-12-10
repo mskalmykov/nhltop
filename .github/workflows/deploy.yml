@@ -17,6 +17,19 @@ jobs:
       with:
         fetch-depth: 0  # For SonarCloud - fetch full repo
 
+    - name: Tests - set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+
+    - name: Tests - install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r app/requirements.txt
+
+    - name: Tests - run
+      run: pytest -vv app
+
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
       env:

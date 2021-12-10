@@ -72,15 +72,6 @@ def get_season_games(season, type):
 
     return result
 
-def print_game_brief(game):
-    gamePk = game['gamePk']
-    team_away_name = game['teams']['away']['team']['name']
-    team_home_name = game['teams']['home']['team']['name']
-    team_away_score = game['teams']['away']['score']
-    team_home_score = game['teams']['home']['score']
-    print('{}: {:30} - {:30}   {}:{}'.format(gamePk, team_away_name, team_home_name, team_away_score, team_home_score))
-
-
 def get_game_players(game_id):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/game/'

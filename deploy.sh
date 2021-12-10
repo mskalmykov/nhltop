@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Azure deploy:
-export TF_VAR_DB_PASSWORD=`pwgen 14 1`
+export TF_VAR_DB_PASSWORD=${TF_VAR_DB_PASSWORD:-`pwgen 14 1`}
 export COMMIT_ID=`git rev-parse HEAD`
 terraform -chdir=./azure/ apply
 terraform -chdir=./azure/ output -raw acr_username ; echo
@@ -42,7 +42,13 @@ kubectl -n monitoring port-forward \
 	svc/prometheus-grafana \
 	--address 0.0.0.0 3000:80 &
 
-# Open in browser:
-#    http://msk-epam-diploma-dev.westeurope.cloudapp.azure.com/
-#    http://msk-epam-diploma-prod.westeurope.cloudapp.azure.com/
+cat <<EOF
+Development environment:
 
+    http://msk-epam-diploma-dev.westeurope.cloudapp.azure.com/
+
+Production environment:
+
+    http://msk-epam-diploma-prod.westeurope.cloudapp.azure.com/
+
+EOF
