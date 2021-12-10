@@ -17,15 +17,15 @@ jobs:
       with:
         fetch-depth: 0  # For SonarCloud - fetch full repo
 
-    - name: Tests - set up Python 3.9
+    - name: Tests - setup Python 3.9
       uses: actions/setup-python@v1
       with:
         python-version: 3.9
 
     - name: Tests - install dependencies
       run: |
-        apt-get update
-        apt-get -y install libmariadb3 libmariadb-dev
+        sudo apt-get update
+        sudo apt-get -y install libmariadb3 libmariadb-dev
         python -m pip install --upgrade pip
         pip install -r app/requirements.txt
 

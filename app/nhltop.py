@@ -30,6 +30,7 @@ def get_with_retries(url):
         print(f'{err}')
         return {}
 
+# Get last N finished NHL seasons (no more than 15)
 def get_last_seasons(count):
     result = []
 
