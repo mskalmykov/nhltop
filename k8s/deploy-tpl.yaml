@@ -15,7 +15,8 @@ spec:
         app: nhltop
     spec:
       containers:
-      - env:
+      - name: nhltop
+        env:
         - name: DB_USER
           value: nhltop
         - name: DB_PASSWORD
@@ -30,13 +31,11 @@ spec:
         image: mskepamdiplomaacr.azurecr.io/nhltop:{{ COMMIT_ID }}
         resources:
           limits:
-            cpu: 20m
-            memory: 50Mi
+            memory: 100Mi
           requests:
-            cpu: 20m
+            cpu: 40m
             memory: 50Mi
-        imagePullPolicy: Always
-        name: nhltop
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
           protocol: TCP
@@ -73,4 +72,4 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: nhltop
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 80

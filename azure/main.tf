@@ -51,11 +51,11 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
   default_node_pool {
     name      = "default"
-    min_count = 1
-    max_count = 2
+    min_count = 2
+    max_count = 4
     vm_size   = "Standard_B2s"
-    #vm_size             = "Standard_DS2_v2"
     enable_auto_scaling = true
+    availability_zones  = ["1", "2"]
   }
 
   auto_scaler_profile {
