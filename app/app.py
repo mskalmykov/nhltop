@@ -16,7 +16,7 @@ def add_header(response):
 
     return response
 
-# Main page
+## Main page
 @app.route('/')
 def rt_main():
     # Try to connect to DB server

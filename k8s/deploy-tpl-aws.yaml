@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nhltop
+  name: nhltop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nhltop
+  template:
+    metadata:
+      labels:
+        app: nhltop
+    spec:
+      containers:
+      - name: nhltop
+        env:
+        - name: DB_USER
+          value: nhltop
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: appsec
+              key: db_password
+        - name: DB_NAME
+          value: {{ DB_NAME }}
+        - name: DB_HOST
+          value: {{ DB_HOST }}
+        image: 786837428141.dkr.ecr.eu-central-1.amazonaws.com/nhltop:{{ COMMIT_ID }}
+        resources:
+          limits:
+            cpu: 500m
+            memory: 100Mi
+          requests:
+            cpu: 40m
+            memory: 50Mi
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nhltop
+    release: prometheus
+  name: nhltop
+spec:
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: nhltop
+  sessionAffinity: None
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nhltop
+spec:
+  maxReplicas: 100
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nhltop
+  targetCPUUtilizationPercentage: 80
