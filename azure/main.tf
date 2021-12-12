@@ -31,9 +31,7 @@ resource "azurerm_resource_group" "rg" {
   }
 }
 
-resource "random_id" "log_analytics_workspace_name_suffix" {
-  byte_length = 8
-}
+### Kubernetes cluster
 
 resource "azurerm_kubernetes_cluster" "k8s" {
   name                = var.cluster_name
@@ -50,10 +48,11 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   }
 
   default_node_pool {
-    name      = "default"
-    min_count = 2
-    max_count = 4
-    vm_size   = "Standard_B2s"
+    name                = "default"
+    min_count           = 2
+    max_count           = 4
+    max_pods            = 20
+    vm_size             = "Standard_B2s"
     enable_auto_scaling = true
     availability_zones  = ["1", "2"]
   }
@@ -76,6 +75,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
 }
 
+# Container registry
 resource "azurerm_container_registry" "acr" {
   name                = "mskepamdiplomaacr"
   resource_group_name = azurerm_resource_group.rg.name
@@ -90,6 +90,8 @@ resource "azurerm_role_assignment" "aks_to_acr_role" {
   role_definition_name = "AcrPull"
   principal_id         = azurerm_kubernetes_cluster.k8s.kubelet_identity[0].object_id
 }
+
+### Database resources
 
 resource "azurerm_mariadb_server" "dbsrv" {
   name                = "mskepamdiplomadb"
@@ -130,6 +132,12 @@ resource "azurerm_mariadb_firewall_rule" "db_firewall_rule" {
   server_name         = azurerm_mariadb_server.dbsrv.name
   start_ip_address    = "0.0.0.0"
   end_ip_address      = "0.0.0.0"
+}
+
+### Logging and monitoring resources
+
+resource "random_id" "log_analytics_workspace_name_suffix" {
+  byte_length = 8
 }
 
 resource "azurerm_log_analytics_workspace" "default" {
