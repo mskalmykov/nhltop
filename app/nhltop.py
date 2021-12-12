@@ -59,6 +59,7 @@ def get_last_seasons(count):
 
     return result
 
+# returns list of season games of particular type (A or P)
 def get_season_games(season, type):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/schedule?'
@@ -74,6 +75,7 @@ def get_season_games(season, type):
 
     return result
 
+# returns list of players which took part in the game
 def get_game_players(game_id):
     result = []
     baseurl = 'https://statsapi.web.nhl.com/api/v1/game/'
@@ -101,6 +103,7 @@ def get_game_players(game_id):
 
     return result
 
+# Database connect (errors are handled in calling functions)
 def db_connect():
     username = os.environ.get('DB_USER')
     password = os.environ.get('DB_PASSWORD')
@@ -114,6 +117,7 @@ def db_connect():
         database = database
     )
 
+# Update DB schema if needed (for now just recreate all the tables)
 def db_update_schema(conn):
     required_version = 1
     try:
@@ -238,7 +242,7 @@ def db_update_schema(conn):
         cur.execute('INSERT INTO schema_ver (version) VALUES (1)')
         conn.commit()
 
-
+# Store game details to database
 def db_store_game(conn, game):
     cur = conn.cursor()
     cur.execute("""
@@ -271,6 +275,7 @@ def db_store_game(conn, game):
 
     conn.commit()
 
+# Store player statistics to the database
 def db_store_player_stat(conn, game, player):
     cur = conn.cursor()
 
@@ -407,6 +412,7 @@ def db_store_player_stat(conn, game, player):
 
     conn.commit()
 
+# Returns a list of seasons stored in the database
 def db_get_seasons(conn):
     cur = conn.cursor()
     result = []
@@ -462,6 +468,7 @@ def db_get_top_players(conn, season):
 
     return result
 
+# Retrieves game details from the database
 def db_get_game(conn, gamePk):
     cur = conn.cursor()
     result = {}
@@ -479,6 +486,7 @@ def db_get_game(conn, gamePk):
 
     return result
 
+# Retrieves player statistics from the database
 def db_get_player_stat(conn, personId, gamePk):
     cur = conn.cursor()
     result = {}
@@ -559,7 +567,7 @@ def db_get_player_stat(conn, personId, gamePk):
 
     return result
 
-# Entry point
+# Entry point if called from cli
 if __name__ == "__main__":
     try:
         arg = sys.argv[1]

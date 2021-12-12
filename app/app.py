@@ -16,6 +16,7 @@ def add_header(response):
 
     return response
 
+# Main page
 @app.route('/')
 def rt_main():
     # Try to connect to DB server
@@ -65,6 +66,7 @@ def cpu_burn(seconds = 60):
     load_all_cores(duration_s=seconds, target_load=1.0)
     return render_template('msg.j2', title = 'CPU burner', message = 'CPU stress complete')
 
+# DB update page
 @app.route('/update/<int:count>')
 @app.route('/update/')
 def rt_update(count = 3):
@@ -109,6 +111,7 @@ def rt_update(count = 3):
                             message = """<p>Database is updated.
                               <a href="/">Return to the main page</a> to view.</p>""")
 
+# Player statistics page
 @app.route('/stats', methods=['GET'])
 def rt_stats():
     # Try to connect to DB server
