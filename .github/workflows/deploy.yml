@@ -8,6 +8,7 @@ on:
       - app/**
 env:
   ACR: mskepamdiplomaacr.azurecr.io
+  ECR: 786837428141.dkr.ecr.eu-central-1.amazonaws.com
 jobs:
   build-and-deploy:
     runs-on: ubuntu-20.04
@@ -46,31 +47,55 @@ jobs:
           else echo "NAMESPACE=dev"  >> $GITHUB_ENV
         fi
         # Set docker image path
-        echo "IMAGE=${{ env.ACR }}/nhltop:$GITHUB_SHA" >> $GITHUB_ENV
+        echo "IMAGE_ACR=${{ env.ACR }}/nhltop:$GITHUB_SHA" >> $GITHUB_ENV
+        echo "IMAGE_ECR=${{ env.ECR }}/nhltop:$GITHUB_SHA" >> $GITHUB_ENV
 
-    - name: Login to container registry 
+    - name: Build image
+      run: |
+        docker build "$GITHUB_WORKSPACE/app" \
+               -f "app/Dockerfile" \
+               -t ${{ env.IMAGE_ACR }} \
+               --label dockerfile-path=app/Dockerfile
+        docker tag ${{ env.IMAGE_ACR }} ${{ env.IMAGE_ECR }}
+    
+    - name: Login to Azure container registry 
       uses: azure/docker-login@v1
       with:
         login-server: ${{ env.ACR }}
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
+
+    - name: Push image to Azure
+      run: docker push ${{ env.IMAGE_ACR }}
     
-    - name: Build and push image
-      run: |
-        docker build "$GITHUB_WORKSPACE/app" \
-               -f "app/Dockerfile" \
-               -t ${{ env.IMAGE }} \
-               --label dockerfile-path=app/Dockerfile
-        docker push ${{ env.IMAGE }}
-    
-    - name: Set kubernetes context
+    - name: Set kubernetes context for Azure
       uses: azure/k8s-set-context@v2
       with:
         method: kubeconfig
         kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
-    - name: Set deployment image
+    - name: Set deployment image for Azure
       run: |
         kubectl -n ${{ env.NAMESPACE }} \
-          set image deploy/nhltop *=${{ env.IMAGE }}
+          set image deploy/nhltop *=${{ env.IMAGE_ACR }}
 
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Push image to AWS
+      run: docker push ${{ env.IMAGE_ECR }}
+    
+    - name: Set deployment image for AWS
+      uses: kodermax/kubectl-aws-eks@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_AWS }}
+      with:
+        args: -n ${{ env.NAMESPACE }} set image deploy/nhltop *=${{ env.IMAGE_ECR }}
+  
