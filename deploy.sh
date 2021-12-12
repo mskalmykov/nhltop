@@ -8,6 +8,8 @@ terraform -chdir=./azure/ output -raw acr_username ; echo
 terraform -chdir=./azure/ output -raw acr_password ; echo
 terraform -chdir=./azure/ output -raw kube_config  ; echo
 az aks get-credentials --resource-group EPAM_Diploma --name aks1 --admin --overwrite-existing
+echo "Waiting 60 seconds for ACR dns name to get ready ..."
+sleep 60
 az acr login --name mskepamdiplomaacr
 docker build -t nhltop:$COMMIT_ID ./app/
 docker tag nhltop:$COMMIT_ID mskepamdiplomaacr.azurecr.io/nhltop:$COMMIT_ID
@@ -35,6 +37,8 @@ kubectl get secret -n monitoring prometheus-grafana \
        	-o jsonpath={.data.admin-user} | base64 -d ; echo
 kubectl get secret -n monitoring prometheus-grafana \
 	-o jsonpath={.data.admin-password} | base64 -d ; echo
+echo "Waiting 60 seconds for grafana and prometheus startup..."
+sleep 60
 kubectl -n monitoring port-forward \
 	svc/prometheus-kube-prometheus-prometheus \
 	--address 0.0.0.0 9090 &
