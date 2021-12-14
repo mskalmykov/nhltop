@@ -34,7 +34,7 @@ def get_with_retries(url):
 def get_last_seasons(count):
     result = []
 
-    # Get no more than 15 seasons, and no less than 1
+    #  Get no more than 15 seasons, and no less than 1
     if count < 1: count = 1
     if count > 15: count = 15
 
